@@ -1,0 +1,9 @@
+"0","birthrate_tidy%>%
+  filter(연령대!=""합계출산율"")%>%
+  group_by(시군구별, 연령대)%>%
+  summarize(출산율평균=mean(출산율, na.rm=TRUE))%>%
+  ggplot(aes(x=연령대, y=출산율평균, group=시군구별))+
+  geom_point()+
+  geom_line()
+"
+"2","`summarise()` has grouped output by '시군구별'. You can override using the `.groups` argument."

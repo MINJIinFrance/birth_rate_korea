@@ -1,0 +1,7 @@
+"0","#20년 동안의 평균출산율을 계산하고 있다.
+birthrate_tidy%>%
+  filter(연령대!=""합계출산율"")%>%
+  group_by(시군구별, 연령대)%>%
+  summarize(출산율평균=mean(출산율, na.rm=TRUE))
+"
+"2","`summarise()` has grouped output by '시군구별'. You can override using the `.groups` argument."

@@ -1,0 +1,72 @@
+---
+title: "practice_birthrate"
+author: "Minji Nam"
+date: "2022-12-16"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+library(readr)
+library(data.table)
+```
+
+```{r}
+birth_rate<- read_csv("./data/birth_rate_uc.txt", skip=1, na="-")
+
+str(birth_rate)
+birth_rate
+```
+
+```{r}
+birth_rate_t<-birth_rate%>%
+  pivot_longer(2:161, names_to = "연령대", values_to="출산율")%>%
+  mutate(연령대2= rep(c("합계출산율","15-19세","20-24세","25-29세","30-34세","35-39세", "40-44세","45-49세"), 360))%>%
+  mutate(연도=rep(rep(2001:2020, each=8), 18))%>%
+  select(-c(연령대))
+
+colnames(birth_rate_t)[3]<-"연령대"
+
+birth_rate_t<-birth_rate_t[,c(4,1,3,2)]
+
+birth_rate_t
+```
+
+
+```{r}
+rm(birth_rate)
+```
+
+```{r}
+birth_rate_t%>%
+  filter(연령대=="합계출산율", 시군구별=="전국")%>%
+  ggplot(aes(x=연도, y= 출산율))+
+  geom_point()+
+  geom_line()
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+birth_rate_t%>%
+  filter(연령대!="합계출산율", 시군구별=="전국")%>%
+  ggplot(aes(x=연도, y=출산율, color=연령대, shape=연령대))+
+  geom_point()+
+  geom_line()+
+  geom_smooth(aes(group=1), se=FALSE)+
+  theme_minimal()+
+  scale_shape_manual(values=0:6)
+```
+
+
+```{r}
+birth_rate_t%>%
+  filter(연령대!="합계출산율", 시군구별=="전국", 연도 %in% c(2002,2007,2012,2017,2020))%>%
+  mutate(연도=as.factor(연도))%>%
+  ggplot(aes(x=연령대, y=출산율, group=연도, color=연도, shape=연도))+
+  geom_point()+
+  geom_line()+
+  theme_minimal()
+```
+

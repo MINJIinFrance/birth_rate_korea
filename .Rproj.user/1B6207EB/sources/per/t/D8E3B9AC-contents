@@ -1,0 +1,637 @@
+---
+title: "low birth rate in Korea(2001-2020)"
+author: "Minji Nam"
+date: "2022-12-15"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+####YALM 헤더 (title, author, date, output)
+R 마크다운 파일이 다른 포맷의 파일 형식으로 변환과 관련된 정보
+
+
+###문서설명
+
+**텍스트 부분** : 코드 또는 분석의 내용과 관련된 설명을 R Markdown 서식을 이용해 넣음.
+#**exemple** -> **부분은 굵은 글씨로 출력
+
+```{r}
+#{r} : 코드 청크 옵션, 코드 출력하는 옵션 지정
+
+#eval=FALSE : 코드는 실행되지 않고 문서에 코드만 보임
+#include = FALSE : 코드는 실행되고 문서에 코드와 결과는 보이지 않는다
+#echo= FALSE : 코드는 실행되고 문서에 결과만 보인다
+#results= 'hide' : 문서에 그래프가 보이지 않는다
+#message= FALSE : 문서에 코드가 만드는 메세지들이 보이지 않는다
+#warning= FALSE : 문서에 코드가 만드는 경고가 보이지 않는다
+
+#R Markdown 문서를 1)분석의 플랫폼 2) 보고서 작성도구로 동시에 사용하기 위해 include=FALSE 를 기본으로 지정한다.
+
+knitr::opts_chunk$set(include = FALSE) 
+# 대부분의 코드를 분석용으로만 사용하고 최종문서에 포함하지 않기 위해 지정
+#최종문서에 포함하고자 하는 그래프와 표는 해당 코드에 include=TRUE 옵션 지정
+```
+
+
+```{r}
+#######################
+##### 패키지 로딩 #####
+#######################
+
+#패키지 로딩 : 분석에 필요한 함수를 포함하는 패키지를 메모리에 로딩하는 과정
+
+#library() : 설치된 패키지를 메모리에 로딩시킴.
+
+#Tidyverse 의 lubridate 패키지는 날짜와 시간 데이터를 위한 패키지이다. 
+
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+
+#kableExtra 패키지 : 테이블을 아름다운 모습으로 최종 문서에 포함시키기 위한 패키지
+
+```
+
+
+### 우리나라의 출산율
+
+```{r}
+#######################
+##### 데이터 읽기 #####
+#######################
+
+#데이터읽기 : 데이터를 데이터소스로부터 R로 읽어드리는 과정
+
+#readr 패키지의 핵심함수들
+#read_delim() : 임의의 구분문자를 사용한 파일을 읽는다. 
+#read_csv() : 콤마 구분문자를 사용한 파일을 읽는다.
+#read_csv2() : 세미콜론 구분문자를 사용한 파일을 읽는다. 
+#read_tsv() : 탭 구분문자를 사용한 파일을 읽는다.
+
+
+#skip= : 데이터를 읽기 전 건너뛰는 줄의 개수
+#na= : 결측치를 나타내는 문자
+#read_csv() 함수는 기본값으로 유니코드(unicode)로 인코딩된 데이터를 요구
+
+library(readr)
+
+#birth_rate<-read_csv("./data/birth_rate.csv", skip = 1, na="-")
+
+#유니코드 깨짐 현상 해결방법(한글로 된 파일이라서)
+#문서->birth_rate->data->다른 이름으로 저장하기-> CSV UTF-8 선택-> 저장
+
+#birth_rate
+
+#인코딩 : 언어를 컴퓨터가 알아들을 수 있는 1,0으로 변환하는 다양한 방식
+#유니코드 : 전 세계 국가드의 모든 언어를 컴퓨터 내부
+```
+```{r}
+birthrate<-read_csv("./data/birth_rate_uc.txt", skip=1, na="-")
+birthrate
+```
+
+```{r}
+#합계출산율 : 가임여성 1명당 출산율
+#연령별출산율 : 해당 연령 여자인구 1,000명당 출산율
+```
+
+
+```{r}
+#########################
+##### 데이터 타이딩 #####
+#########################
+
+#데이터 타이딩 : 데이터를 데이터시각화, 변호나, 모형화에 효율적인 구조로 변형하는 과정
+
+#tidyr 의 핵심함수들
+#pivot_longer() : 여러 개의 변수(열)를 두 개의 변수(열)로 만들어 데이터를 위 아래로 길게 만든다.
+#pivot_wider() : 두개의 변수(열)를 여러 개의 변수(열)로 만들어 데이터를 옆으로 길게 만든다. 
+#separate() : 하나의 변수(열)를 여러 개의 변수(열)로 분리한다.
+# unite() : 여러 개의 변수(열)을 하나의 변수(열)로 결합한다. 
+
+#pivot_longer(data, cols, names_to="name", values_to="value")
+#cols= 피봇할 컬럼을 tidy-selection으로 지정
+#names_to =cols 에 지정된 변수의 이름을 값으로 가지는 새로운 변수의 이름
+# values_to =cols 에 지정된 변수의 값을 값으로 가지는 새로운 변수의 이름
+
+birthrate%>%
+  pivot_longer(2:161, names_to = "연령대", values_to="출산율")
+
+
+#하나의 속성을 나타내는 변수가 하나의 컬럼을 이루는 타이디 데이터
+```
+```{r}
+########################
+##### 데이터 변환 #####
+########################
+
+
+#데이터변환 : R로 읽어드린 데이터를 데이터시각화나 모형화를 하기에 적합한 형태로 변형하는 과정
+
+#dplyr 패키지의 핵심함수들
+# select() : 위치나 이름을 기준으로 열(변수)을 선택한다(변수선택, 열 선택)
+# filter() : 조건을 기준으로 행(관측값)을 선택한다.(관측값선택, 행선택)
+# mutate() : 데이터에 이미 존재하는 변수들을 이용해 새로운 변수를 생성해서 데이터에 추가(변수생성)
+# arrange() : 지정된 변수의 값에 따라 행 정렬(행정렬)
+# summarize() : 요약함수를 이용해 변수를 하나의값으로 요약한다(변수요약)
+# group_by() : 데이터프레임을 그룹화된 데이터프레임으로 변환(그룹화된 데이터프레임으로 변환)
+# join() : 키변수에 대한 매칭을 통해 두 데티어프레임을 병합(병합)
+
+# 160= 8가지 변수*20년
+# 360 = 18 개 지역(전국+17개 시도)*20년
+
+#stringr패키지의 함수와 정규표현식 regular expression 을 사용하면 보다 효율적으로 문자열을 다룰 수 있다. 
+
+birthrate%>%
+  pivot_longer(2:161, names_to = "연령대", values_to="출산율")%>%
+  mutate(연령대2=rep(c("합계출산율","15-19세", "20-24세", "25-29세", "30-34세", "35-39세", "40-44세", "45-49세"), 360))
+
+#연령대의 자료가 Rstudio에서 임의로 넣은 번호가 생성이 되어 있기 때문에, 더 간단하게 만들기 위해 
+#mutate()함수를 사용해 새로운 변수를 만들어 줌.
+#rep() 함수 이용 : 새롭게 뒤에 숫자가 안 붙는 새로운 값 생성
+#mutate(연령대2=rep(c(...), 360))
+```
+
+```{r}
+birthrate_tidy<-birthrate%>%
+  pivot_longer(2:161, names_to = "연령대", values_to="출산율")%>%
+  mutate(연령대2=rep(c("합계출산율","15-19세", "20-24세", "25-29세", "30-34세", "35-39세", "40-44세", "45-49세"), 360))%>%
+  mutate(연도=rep(rep(2001:2020, each=8),18))
+
+birthrate_tidy<-subset(birthrate_tidy, select=-c(연령대))
+
+colnames(birthrate_tidy)[3]<-"연령대"
+
+birthrate_tidy<-birthrate_tidy[,c(1,3,2,4)]
+
+birthrate_tidy
+```
+
+
+```{r}
+
+#filter() : 조건을 기준으로 행(관측값)을 선택한다.(관측값 선택, 행선택)
+#행을 선택할 조건이 여러 개일 때는 콤마로 구분하여 여러 조건을 나열할 수 있다. 
+# 이때 여러 개의 조건은 교집합을 나타내느 and연산자(&)로 결합된다. 
+
+#하지만 테이블의 많은 숫자들로부터 패턴을 발견하기는 쉽지 않다-> 데이터 시각화 필요
+
+birthrate_tidy%>%
+  filter(시군구별=="전국", 연령대=="합계출산율")
+```
+
+```{r}
+#########################
+##### 데이터 시각화 #####
+#########################
+
+
+#데이터시각화 : 데이터를 이해하고 분석결과를 요약하기 위한 그래프 생성
+
+#ggplot2 패키지 기본 아이디어
+#1. 그래프는 데이터로부터 기하학적 객체의 미학적 속성으로의 맵핑이다.
+#2. 그래프는 그래픽 요소들의 층으로 이루어 진다. 
+
+#그래픽요소
+# - 데이터 data : 그래프를 위한 변수들
+# - 좌표계 coordinate system : 데이터를 표현하기 위한 기하학적인 모양
+# - 통계 statistics : 데이터로부터 계산된 그래프에 필요한 값들
+# - 미학적 속성 aesthetics : 기하학적 객체의 시각적인 특징
+# - 분할 facets : 데이터의 부분집합을 나타내는 부분 그래프
+# - 테마 Theme : 모든 비데이터적인 요소들
+
+
+#ggplot2 함수의 핵심함수
+#ggplot() : ggplot(data, aes()) 함수는 ggplot 객체를 초기화함.
+#1) 데이터셋 이름 2)미학적 속성 맵핑을 지정해주어야 함.
+#geom_*() : 기하학적 객체 함수 geom function을 가짐.
+
+
+#2015년 이후에 합계출산율이 급격하게 낮아지고 있다. 
+
+birthrate_tidy%>%
+  filter(시군구별=="전국", 연령대=="합계출산율")%>%
+  ggplot(aes(x=연도, y= 출산율))+
+  geom_point()+
+  geom_line()
+```
+
+
+```{r}
+#선그래프 line graph 는 두 변수로 정의되는 점들을 선으로 차례로 연결한 그래프
+# 18개 지역별로 선그래프를 그리고자 할 때 아래 코드는 geom_line() 함수가 모든 지역의 점들을 
+#한번에 이으려고 하기 때문에 원하는 그래프를 얻을 수 없다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율))+
+  geom_point()+
+  geom_line()
+```
+
+
+```{r}
+#그룹화 grouping : group=<name of variable>의 형식으로 지정
+#해당 작업이 변수가 가지는 각각의 값에 따라 이루어진다. 
+#이 예시에서는 group=시군구별 로 인해 시군구별로 선그래프가 그려진다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별))+
+  geom_point()+
+  geom_line()
+```
+
+```{r}
+#color = 시군구별 미학적 속성 맵핑을 통해 시군구별로 다른 색상의 선을 사용할 수 있다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별, color=시군구별))+
+  geom_point()+
+  geom_line()
+```
+
+
+
+```{r}
+#선을 색상으로 구별하면 흑백으로 인쇄했을 때 선을 구별할 수 없다. 
+#shape= 시군구별 : 미학적 속성 맵핑을 통해 시군구별로 다른 모양의 점을 사용할 수 있다. 
+#하지만 R은 기본적으로 6개 모양만을 표시한다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별, color=시군구별, shape=시군구별))+
+  geom_point()+
+  geom_line()
+```
+
+```{r}
+#scale_shape_manual(vales= 0:?) 함수를 통해 원하는 개수의 모양을 지정
+# 이 예시에서는 18개의 시군구를 표시하기 위해 0:17이 지정되었다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별, color=시군구별, shape=시군구별))+
+  geom_point()+
+  geom_line()+
+  scale_shape_manual(values= 0:17)
+```
+
+
+```{r}
+#ggplot() 함수에서 지정된 global aesthetic mapping 은
+#geom_point() 함수와 geom_line() 함수에는 적용되나
+#geom_smooth() 함수에서는 이 함수 내부에서 지정된 local aesthetic mapping 에 의해 대체된다. 
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별, color=시군구별, shape=시군구별))+
+  geom_point()+
+  geom_line()+
+  scale_shape_manual(values= 0:17)+
+  geom_smooth(aes(group=1), se=FALSE)
+```
+
+가임여성 1명당 출산율을 나타내는 합계출산율은 2015년 이후 급격하게 낮아지고 있다. 
+
+```{r, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+#ggplot() 함수에 지정된 global aesthetic mapping은
+#geom_smooth() 함수에서는  이 함수 내부에서 지정되 ㄴlocal aesthetic mapping에 의해 대체됨.
+
+birthrate_tidy%>%
+  filter(연령대=="합계출산율", 시군구별 != "전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=시군구별, color=시군구별, shape=시군구별))+
+  geom_point()+
+  geom_line()+
+  scale_shape_manual(values= 0:17)+
+  geom_smooth(aes(group=1), se=FALSE)+
+  theme_minimal()+
+  labs(title="연도별 합계출산율(가임여성 1명당 출산율)",
+       subtitle= "2001-2020",
+       caption="자료출처 : 국가통계포털",
+       y= "합계출산율")
+
+```
+
+
+```{r}
+birthrate_tidy
+```
+
+```{r}
+#group_by() 함수는 데이터프레임을 변수에 의해 정의된 그룹구조를 가지고 있는
+#그룹화된 데이터프레임(grouped dataframe)으로 변환한다.
+#그룹화된 데이터프레임이란 그룹구조 grouping structure 에 대한 정의를 포함하고 있는 데이터프레임이다. 
+
+birthrate_tidy%>%
+  filter(연령대!= "합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균= mean(출산율))
+```
+```{r}
+birthrate_tidy%>%
+  filter(연령대!= "합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균= mean(출산율,na.rm=T))
+```
+
+```{r}
+#arrange() 지정된 변수의 갑세 따라 행 정렬
+#arrnge() 함수는 기본값으로 오름차순 ascending order 따라 정렬
+#내림차순 descending order 로 정렬하기 위해서 desc(변수) 함수를 사용한다.
+
+birthrate_tidy%>%
+  filter(연령대!= "합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균= mean(출산율,na.rm=T))%>%
+  arrange(desc(출산율평균))
+```
+
+```{r, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+#kableExtra 패키지는 테이블 스타일을 위한 함수들을 제공한다.
+install.packages("kableExtra")
+library(kableExtra)
+
+birthrate_tidy%>%
+  filter(연령대!= "합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균= mean(출산율,na.rm=T))%>%
+  arrange(desc(출산율평균))%>%
+  kbl()%>%
+  kable_paper(full_width=F)
+  
+```
+
+
+```{r}
+#막대그래프는 범주형 변수의 분포를 나탄는 그래프이다.
+#geom_bar() : 막대의 높이에 해당하는 빈도를 데이터로부터 계산한다.
+#geom_bar(stat="identity") : 막대의 높이에 해당하는 값이 이미 데이터 있을 떄 사용한다.
+#geom_col() : 막대의 높이에 해당하는 값이 이미 데이터 있을 때 사용한다.
+
+birthrate_tidy%>%
+  filter(연령대!="합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균=mean(출산율, na.rm=T))%>%
+  ggplot(aes(x=시군구별, y= 출산율평균))+
+  geom_col()
+```
+
+
+```{r}
+#coored_flip() 함수를 사용하면 x축과 y축이 바뀌어 시군구의 틱레이블이 겹치지 않는다
+birthrate_tidy%>%
+  filter(연령대!="합계출산율")%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균=mean(출산율, na.rm=T))%>%
+  ggplot(aes(x=시군구별, y= 출산율평균))+
+  geom_col()+
+  coord_flip()
+```
+
+```{r}
+#처음부터 Y축에 시군구를 맵핑해도 시군구 틱레이블의 겹침을 방지할 수 있다. 
+
+birthrate_tidy%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균=mean(출산율, na.rm=T))%>%
+  ggplot(aes(x=출산율평균, y= 시군구별))+
+  geom_col()
+```
+
+
+```{r}
+
+#reorder(정렬하고 싶은 변수, 정렬의 기준이 되는 변수)를 사용하면
+#정렬된 막대그래프를 얻을 수 있다. 
+
+birthrate_tidy%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균=mean(출산율, na.rm=T))%>%
+  ggplot(aes(x=출산율평균, y= reorder(시군구별, 출산율평균)))+
+  geom_col()
+```
+
+
+```{r, include=TRUE, message=FALSE, echo=FALSE, warning=FALSE}
+birthrate_tidy%>%
+  group_by(시군구별)%>%
+  summarize(출산율평균=mean(출산율, na.rm=T))%>%
+  ggplot(aes(x=출산율평균, y= reorder(시군구별, 출산율평균)))+
+  geom_col()+
+  theme_minimal()+
+  labs(title="시도별 출산율 평균",
+       subtitle="2001-2020 평균",
+       caption="자료출처 : 국가통계포털",
+       y="출산율 평균")
+```
+
+```{r}
+birthrate_tidy
+```
+
+```{r}
+#20년 동안의 평균출산율을 계산하고 있다.
+birthrate_tidy%>%
+  filter(연령대!="합계출산율")%>%
+  group_by(시군구별, 연령대)%>%
+  summarize(출산율평균=mean(출산율, na.rm=TRUE))
+```
+```{r}
+#그룹화 : group=<변수이름>
+#group=시군구별
+
+birthrate_tidy%>%
+  filter(연령대!="합계출산율")%>%
+  group_by(시군구별, 연령대)%>%
+  summarize(출산율평균=mean(출산율, na.rm=TRUE))%>%
+  ggplot(aes(x=연령대, y=출산율평균))+
+  geom_point()+
+  geom_line()
+  
+```
+```{r, include=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+
+birthrate_tidy%>%
+  filter(연령대!="합계출산율")%>%
+  group_by(시군구별, 연령대)%>%
+  summarize(출산율평균=mean(출산율, na.rm=TRUE))%>%
+  ggplot(aes(x=연령대, y=출산율평균, group=시군구별, col=시군구별, shape=시군구별))+
+  geom_point()+
+  geom_line()+
+  scale_shape_manual(values = 0:17)+
+  theme_minimal()+
+  geom_smooth(aes(group=1), se=FALSE)+
+  labs(title="시도별 연령별 출산율 분포",
+       subtitle="2001-2020 평균",
+       caption="자료출처 : 국가통계포털",
+       y="출산율 평균")
+
+#25~29세 시도별 출산율 큰 차이를 보임.
+```
+
+```{r}
+#v1 %in%v2 : v1 벡터의 원소가 v2에 속해 있는지 테스트하여 있으면 TRUE 없으면 FALSE를 반환
+#filter() 함수 내에서 콤마로 연결되는 조건은 and로 연결한다.
+
+birthrate_tidy%>%
+  filter(시군구별=="전국", 연령대!="합계출산율", 연도 %in% c(2001,2006,2011,2016,2020))
+```
+
+```{r}
+#shape= 맵핑은 펙터를 요구한다.
+birthrate_tidy%>%
+  filter(시군구별=="전국", 연령대!="합계출산율", 연도 %in% c(2001,2006,2011,2016,2020))%>%
+  ggplot(aes(x=연령대, y=출산율, group=factor(연도), color=factor(연도), shape=factor(연도)))+
+  geom_point()+
+  geom_line()
+
+```
+
+```{r, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+birthrate_tidy%>%
+  filter(시군구별=="전국", 연령대!="합계출산율", 연도 %in% c(2001,2006,2011,2016,2020))%>%
+  mutate(연도=as.factor(연도))%>%
+  ggplot(aes(x=연령대, y=출산율, group=연도, color=연도, shape=연도))+
+  geom_point()+
+  geom_line()+
+  theme_minimal()+
+  labs(title="연도별 연령별 출산율 분포",
+       subtitle="2001,2006,2011,2016,2020", 
+       caption= "자료출처 : 국가통계포털", 
+       y="출산율 평균")
+```
+
+연령별 출산율 분포가 2001년부터 2020년에 걸쳐 꾸준하게 낮아지고 있으면
+이는 전반적으로 출산율이 하락하고 있음을 나타낸다.
+또한 2001년에는 25-29세 연령대가 가장 높은 출산율을 나타냈으나 2010년 이후에는 
+30-34세 연령대가 가장 높은 출산율을 나타내고 있으며
+이는 만혼과 초혼연령의 상승으로 인해 주출산 연령대가 30대로 바뀌었음을 나타낸다. 
+특별히 25-29세 청년층의 출산율 저하는 매우 크다.
+
+
+```{r}
+#선그래프 line graph 는 두 변수로 정의되는 점들을 선으로 차례로 연결한 그래프
+#연령대별로 선그래프를 그리고자 할 때 아래 코드는 geom_line()함수가 모든 연령대의 점들을
+#한번에 이으려고 하기 때문에 원하는 그래프를 얻을 수 없다.
+
+birthrate_tidy%>%
+  filter(시군구별=="전국")%>%
+  ggplot(aes(x=연도, y=출산율))+
+  geom_point()+
+  geom_line()
+```
+
+```{r}
+birthrate_tidy%>%
+  filter(시군구별=="전국")%>%
+  ggplot(aes(x=연도, y=출산율, group=연령대, col=연령대, shape=연령대))+
+  geom_point()+
+  geom_line()+
+  scale_shape_manual(values = 0:7)+
+  geom_smooth(aes(group=1), se=FALSE)
+```
+
+
+
+### OECD 국가들의 출산율
+
+```{r, eval=FALSE}
+######################
+##### 데이터 읽기#####
+######################
+
+#R에서 파일을 읽을 때
+# 1. 유니코드로 인코딩된 파일을 읽어드리거나,
+# 2. 인코딩을 지정해줄 수 있다. read_csv("", locale=locale('ko', encoding='euc-kr'))
+
+birth_rate_oecd<-read_csv("./data/birth_rate_OECD.csv", locale = locale('ko', encoding='euc-kr'))
+birth_rate_oecd
+```
+
+```{r}
+birth_rate_oecd%>%
+  pivot_longer(3:16, names_to = "연도", values_to= "출산율")
+```
+
+```{r}
+#Tidyverse의 lubridate 패키지는 날짜와 시간을 다루기 위한 함수들을 제공한다. 
+#lubridate 패키지의 parse_date_time() 함수는 다양한 포맷의 문자형 자료를 날짜/시간 데이터로 인식한다.
+
+birth_rate_oecd%>%
+  pivot_longer(3:16, names_to = "연도", values_to= "출산율")%>%
+  mutate(연도2= parse_date_time(연도, orders="y"))
+
+#연도 <chr>이기 때문에 따로 연도2를 mutate하면서 날짜 시간 데이터로 변형시킴
+#parse_date_time(변수이름, orders="y")원래 파일에 연도라는 정보만 가지고 있음을 알려줌.
+#만약 연도와 달이 있는 정보라면, "ym"을 적어주면 됨. 
+```
+
+```{r}
+birth_rate_oecd_tidy<-birth_rate_oecd%>%
+  pivot_longer(3:16, names_to = "연도", values_to= "출산율")%>%
+  mutate(연도2= parse_date_time(연도, orders="y"))
+birth_rate_oecd_tidy
+```
+
+```{r}
+birth_rate_oecd_tidy<-birth_rate_oecd_tidy[,-3]
+colnames(birth_rate_oecd_tidy)[4]<-"연도"
+birth_rate_oecd_tidy<-birth_rate_oecd_tidy[,c(1,2,4,3)]
+birth_rate_oecd_tidy
+
+birth_rate_oecd_tidy%>%
+  ggplot(aes(x=대륙, y=출산율, fill=대륙))+
+  geom_boxplot()
+
+```
+유럽대륙이 다른 대륙에 비해 출산율이 매우 낮으며, 아시아는 각 국가들의 출산율 폭이 매우 크다.
+
+```{r}
+#바이올린 플롯은 박스플롯과 밀도플롯을 결합한 그래프이다.
+#바이올린 플롯은 분포의 모양을 직접 표현한다.
+#바이올린 플롯은 범주형 변수(대륙)와 연속형 변수(출산율)사이의 관계를 나타내기 위해 사용 가능하다.
+
+birth_rate_oecd_tidy%>%
+  ggplot(aes(x=대륙, y=출산율, fill=대륙))+
+  geom_violin()
+```
+
+```{r}
+#그룹화 grouping은 group=<변수이름>의 형식으로 지정되며
+#해당 작업이 변수가 가지는 각각의 값에 따라 이루어진다.
+# 이 예시에서는 'group=국가별' 로 인해 국가별로 선그래프가 그려진다. 
+
+birth_rate_oecd_tidy%>%
+  ggplot(aes(x=연도, y=출산율, group=국가별))+ # global aesthetic mapping
+  geom_line()+
+  geom_smooth(aes(group=7)) # 아무숫자가 가능함 # local aesthetic mapping
+
+```
+```{r}
+birth_rate_oecd_tidy%>%
+  ggplot(aes(x=연도, y=출산율, group=국가별, color=대륙))+ 
+  geom_line()+
+  geom_smooth(aes(group=77))
+```
+
+우리나라 뿐만 아니라 OECD 38개 국가들도 출산율이 전반적으로 하락하고 있다. 유럽국가들은 이미 1995년부터 출산율이 다른 대륙의 국가들에 비해 전반적으로 낮았으며 출산율 하락의 폭이 다른 대륙의 국가들에 비해 작다. 남아메리카, 북아케리카, 아시아 국가들은 1955년에는 출산율이 유럽국가들에 비해 높은 편이었으나 점차적으로 출산율이 매우 큰 폭으로 하락하여 최근에는 유럽국가들과 큰 차이를 보이고 있지 않다. 
+
+
+```{r, include=TRUE, message=FALSE, echo=FALSE, warning=FALSE}
+birth_rate_oecd_tidy%>%
+  ggplot(aes(x=연도, y=출산율, group=국가별, color=대륙))+ 
+  geom_line()+
+  geom_smooth(aes(group=1))+
+  theme_minimal()+
+  labs(main="OECD 38개 국가들의 연도별 출산율",
+       subtitle="1955-2020",
+       caption="자료출처: 국가통계포털",
+       y="출산율")
+```
+```{r}
+
+```
+
